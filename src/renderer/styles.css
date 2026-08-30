@@ -1,0 +1,631 @@
+:root {
+  --window-bg: #ffffff;
+  --page-bg: #ffffff;
+  --card-bg: #ffffff;
+  --card-hover: #ffffff;
+  --card-active: #ffffff;
+  --field-bg: #ffffff;
+  --primary: #E32A4B;
+  --primary-hover: #C21B38;
+  --success: #22c55e;
+  --danger: #E32A4B;
+  --text-main: #111827;
+  --text-sub: #6b7280;
+  --text-disabled: #9ca3af;
+  --border: #e5e7eb;
+  --soft-border: #f3f4f6;
+  --idle-bg: #f3f4f6;
+  --idle-text: #6b7280;
+  --shadow: 0 14px 34px rgba(15, 23, 42, 0.06);
+  --window-control-space: 152px;
+  color: var(--text-main);
+  background: var(--page-bg);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+:root[data-theme="dark"] {
+  --window-bg: #000000;
+  --page-bg: #000000;
+  --card-bg: #0A0A0A;
+  --card-hover: #111111;
+  --card-active: #120609;
+  --field-bg: #0A0A0A;
+  --primary: #E32A4B;
+  --primary-hover: #C21B38;
+  --success: #4ade80;
+  --danger: #E32A4B;
+  --text-main: #ffffff;
+  --text-sub: #d1d5db;
+  --text-disabled: #6b7280;
+  --border: #1F1F1F;
+  --soft-border: #151515;
+  --idle-bg: #171717;
+  --idle-text: #9ca3af;
+  --shadow: 0 18px 44px rgba(0, 0, 0, 0.35);
+}
+
+html {
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: inherit;
+}
+
+body {
+  display: grid;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  place-items: stretch;
+  background: var(--page-bg);
+  color: var(--text-main);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-size: 13px;
+  line-height: 1.5;
+  user-select: none;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+:where(a, button, input, select, textarea):focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+#root {
+  width: 100%;
+  height: 100%;
+}
+
+.app-shell {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  color: var(--text-main);
+  background: var(--page-bg);
+  flex-direction: column;
+}
+
+.topbar {
+  position: relative;
+  display: grid;
+  align-items: center;
+  grid-template-columns: minmax(120px, 1fr) auto minmax(180px, 1fr);
+  height: 48px;
+  padding: 0 16px;
+  background: var(--window-bg);
+  border-bottom: 1px solid var(--border);
+  flex: 0 0 auto;
+  user-select: none;
+  -webkit-app-region: drag;
+}
+
+.app-shell.is-windows .topbar {
+  padding-right: var(--window-control-space);
+}
+
+.titlebar-left {
+  display: flex;
+  align-items: center;
+  grid-column: 1;
+  grid-row: 1;
+  min-width: 0;
+}
+
+.app-shell.is-mac .titlebar-left {
+  padding-left: 64px;
+}
+
+.app-shell.is-mac .app-icon {
+  visibility: hidden;
+}
+
+.app-icon {
+  color: var(--primary);
+  font-size: 16px;
+}
+
+.titlebar-title {
+  position: absolute;
+  left: 50%;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transform: translateX(-50%);
+  color: var(--text-main);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.update-badge {
+  display: inline-flex;
+  align-items: center;
+  height: 18px;
+  padding: 0 6px;
+  appearance: none;
+  cursor: default;
+  color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--primary) 22%, transparent);
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 650;
+  line-height: 1;
+  -webkit-app-region: no-drag;
+}
+
+button.update-badge {
+  cursor: pointer;
+}
+
+.topbar-actions,
+.action-bar,
+.toolbar-tools,
+.modal-footer,
+.modal-footer-actions {
+  display: flex;
+  align-items: center;
+}
+
+.topbar-actions {
+  grid-column: 3;
+  grid-row: 1;
+  justify-self: end;
+  gap: 8px;
+  min-width: 0;
+  -webkit-app-region: no-drag;
+}
+
+.sync-button.ant-btn-text,
+.restart-button.ant-btn-text {
+  height: 32px;
+  padding-inline: 8px;
+  color: var(--text-sub);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.sync-button.ant-btn-text:hover,
+.restart-button.ant-btn-text:hover {
+  color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 10%, transparent);
+}
+
+.sync-button .anticon,
+.restart-button .anticon {
+  font-size: 14px;
+}
+
+.settings-button {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  color: var(--text-sub);
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+}
+
+.settings-button:hover {
+  color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 10%, transparent);
+}
+
+.action-bar {
+  justify-content: space-between;
+  gap: 18px;
+  padding: 24px 24px 20px;
+  flex: 0 0 auto;
+}
+
+.toolbar-tools {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 14px;
+  min-width: 0;
+}
+
+.create-button.ant-btn {
+  height: 40px;
+  padding-inline: 18px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 650;
+  box-shadow: 0 6px 14px color-mix(in srgb, var(--primary) 16%, transparent);
+}
+
+.create-button .anticon {
+  font-size: 15px;
+}
+
+.action-bar .ant-btn-primary,
+.config-card-actions .ant-btn-primary,
+.modal-footer-actions .ant-btn-primary {
+  background: var(--primary);
+  border-color: var(--primary);
+}
+
+.action-bar .ant-btn-primary:hover,
+.config-card-actions .ant-btn-primary:hover,
+.modal-footer-actions .ant-btn-primary:hover {
+  background: var(--primary-hover);
+  border-color: var(--primary-hover);
+}
+
+.ant-btn-default:not(:disabled):hover {
+  color: var(--primary) !important;
+  border-color: var(--primary) !important;
+}
+
+.ant-btn-link {
+  color: var(--primary);
+}
+
+.ant-progress .ant-progress-bg {
+  background: var(--primary);
+}
+
+.view-segmented.ant-segmented {
+  padding: 3px;
+  background: var(--field-bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.035);
+}
+
+.view-segmented .ant-segmented-item-selected {
+  color: #ffffff;
+  background: var(--primary);
+}
+
+.view-segmented .ant-segmented-item-selected .segmented-label {
+  color: #ffffff;
+}
+
+.view-segmented .ant-segmented-item {
+  border-radius: 7px;
+}
+
+.view-segmented .ant-segmented-item-label {
+  min-height: 30px;
+  padding-inline: 11px;
+  line-height: 30px;
+}
+
+.segmented-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.sync-line {
+  display: grid;
+  gap: 7px;
+  padding: 0 24px 14px;
+  color: var(--text-sub);
+  font-size: 12px;
+}
+
+.sync-line .ant-progress-line {
+  margin: 0;
+}
+
+.config-area {
+  flex: 1;
+  min-height: 0;
+  padding: 0 24px 24px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+.config-area::-webkit-scrollbar,
+.profile-modal .ant-modal-body::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.config-area::-webkit-scrollbar-thumb,
+.profile-modal .ant-modal-body::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--text-sub) 36%, transparent);
+  border-radius: 999px;
+}
+
+.config-grid {
+  display: grid;
+  gap: 16px;
+}
+
+.config-grid.is-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.config-grid.is-list {
+  grid-template-columns: 1fr;
+}
+
+.config-card {
+  display: flex;
+  min-height: 156px;
+  padding: 14px;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  flex-direction: column;
+  transition:
+    background 140ms ease,
+    border-color 140ms ease;
+}
+
+.config-card:hover {
+  background: var(--card-hover);
+  border-color: color-mix(in srgb, var(--border) 55%, var(--text-sub));
+}
+
+.config-card.is-active {
+  padding: 13px;
+  background: var(--card-active);
+  border: 2px solid var(--primary);
+}
+
+.config-card-content {
+  min-width: 0;
+}
+
+.config-card h3 {
+  margin: 0;
+  overflow: hidden;
+  color: var(--text-main);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.config-card p {
+  display: -webkit-box;
+  min-height: 36px;
+  margin: 6px 0 12px;
+  overflow: hidden;
+  color: var(--text-sub);
+  font-size: 12px;
+  line-height: 1.5;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.state-badge {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 9px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.state-badge.is-applied {
+  color: #ffffff;
+  background: var(--success);
+}
+
+.state-badge.is-idle {
+  color: var(--idle-text);
+  background: var(--idle-bg);
+}
+
+.config-card-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  width: 100%;
+  margin-top: auto;
+  padding-top: 16px;
+}
+
+.config-card-actions .ant-btn {
+  height: 32px;
+  font-size: 12px;
+}
+
+.empty-state {
+  display: grid;
+  min-height: 360px;
+  place-items: center;
+  align-content: center;
+  color: var(--text-sub);
+}
+
+.empty-state .ant-empty-description {
+  color: var(--text-sub);
+}
+
+.profile-modal .ant-modal-content {
+  overflow: hidden;
+  background: var(--field-bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 22px 54px rgba(0, 0, 0, 0.18);
+}
+
+.profile-modal .ant-modal-header {
+  margin-bottom: 16px;
+  background: transparent;
+}
+
+.profile-modal .ant-modal-title {
+  color: var(--text-main);
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.profile-modal .ant-modal-close {
+  color: var(--text-sub);
+}
+
+.profile-modal .ant-modal-body {
+  max-height: min(438px, calc(100vh - 160px));
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.profile-form .ant-form-item {
+  margin-bottom: 16px;
+}
+
+.profile-form {
+  font-size: 13px;
+}
+
+.profile-form .ant-form-item-label {
+  padding-bottom: 6px;
+}
+
+.profile-form .ant-form-item-label > label {
+  color: var(--text-main);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.profile-form :is(.ant-input, .ant-input-password, .ant-select-selector) {
+  color: var(--text-main);
+  background: var(--field-bg) !important;
+  border-color: var(--border) !important;
+  border-radius: 8px !important;
+  font-size: 13px;
+}
+
+.profile-form :is(.ant-input, .ant-input-password, .ant-select-selector):hover {
+  border-color: color-mix(in srgb, var(--border) 48%, var(--primary)) !important;
+}
+
+.profile-form :is(.ant-input, .ant-input-password, .ant-select-selector):focus,
+.profile-form :is(.ant-input, .ant-input-password-focused, .ant-select-focused .ant-select-selector) {
+  border-color: var(--primary) !important;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary) 20%, transparent) !important;
+}
+
+.profile-form .ant-input::placeholder,
+.profile-form .ant-select-selection-placeholder {
+  color: var(--text-disabled);
+}
+
+.config-textarea.ant-input {
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 13px;
+  line-height: 1.55;
+  resize: vertical;
+}
+
+.modal-footer {
+  justify-content: space-between;
+  gap: 16px;
+  width: 100%;
+}
+
+.modal-footer-actions {
+  gap: 10px;
+}
+
+.delete-link {
+  padding-inline: 0;
+}
+
+.ant-dropdown .ant-dropdown-menu {
+  background: var(--field-bg);
+  border: 1px solid var(--border);
+}
+
+.ant-dropdown .ant-dropdown-menu-item,
+.ant-dropdown .ant-dropdown-menu-submenu-title {
+  color: var(--text-main);
+}
+
+.ant-dropdown .ant-dropdown-menu-item-selected {
+  color: #ffffff;
+  background: var(--primary);
+}
+
+.ant-dropdown .ant-dropdown-menu-item:hover {
+  background: color-mix(in srgb, var(--primary) 10%, transparent);
+}
+
+@media (max-width: 760px) {
+  .app-shell {
+    min-height: 0;
+  }
+
+  .topbar {
+    grid-template-columns: 72px 1fr auto;
+  }
+
+  .app-shell.is-mac .titlebar-left {
+    padding-left: 52px;
+  }
+
+  .app-shell.is-windows .topbar {
+    padding-right: 132px;
+  }
+
+  .action-bar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .toolbar-tools {
+    justify-content: space-between;
+  }
+
+  .config-grid.is-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 520px) {
+  .topbar,
+  .action-bar {
+    padding-inline: 16px;
+  }
+
+  .config-area {
+    padding-inline: 16px;
+  }
+
+  .topbar-actions .sync-button .ant-btn-icon + span {
+    display: none;
+  }
+
+  .view-segmented .ant-segmented-item-label {
+    padding-inline: 10px;
+  }
+
+  .config-grid.is-grid {
+    grid-template-columns: 1fr;
+  }
+}

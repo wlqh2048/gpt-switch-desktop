@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+  <title>GPT Switch</title>
+  <script type="module">
+    const analyticsWebsiteId = import.meta.env.VITE_ANALYTICS_WEBSITE_ID;
+    const analyticsScriptUrl = import.meta.env.VITE_ANALYTICS_SCRIPT_URL;
+
+    window.gptSwitchAnalyticsBeforeSend = function (_type, payload) {
+      return {
+        ...payload,
+        hostname: "desktop.gptswitch.local",
+        url: "/desktop",
+        title: "GPT Switch Desktop",
+        referrer: "",
+      };
+    };
+
+    if (analyticsWebsiteId && analyticsScriptUrl) {
+      const script = document.createElement("script");
+      script.defer = true;
+      script.src = analyticsScriptUrl;
+      script.setAttribute("data-website-id", analyticsWebsiteId);
+      script.setAttribute("data-auto-pageview", "false");
+      script.setAttribute("data-before-send", "gptSwitchAnalyticsBeforeSend");
+      document.head.appendChild(script);
+    }
+  </script>
+</head>
+
+<body>
+  <div id="root"></div>
+  <script type="module" src="/src/renderer/main.tsx"></script>
+</body>
+
+</html>
