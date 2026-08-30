@@ -8,7 +8,7 @@
   "scripts": {
     "test": "vitest run",
     "clean": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\"",
-    "build": "pnpm clean && tsc -p tsconfig.main.json && tsc -p tsconfig.renderer.json && vite build",
+    "build": "pnpm clean && tsc -p tsconfig.main.json && node scripts/generate-build-config.mjs && tsc -p tsconfig.renderer.json && vite build",
     "dev": "node scripts/dev.mjs",
     "electron:dev": "node scripts/dev.mjs",
     "build:win": "pnpm build && electron-builder --win nsis --x64",
@@ -18,6 +18,7 @@
     "appId": "com.eting.ai-model-v2",
     "productName": "GPT Switch",
     "icon": "build/icon",
+    "afterPack": "scripts/after-pack.cjs",
     "files": [
       "dist/**",
       "build/icon.png",
@@ -50,19 +51,17 @@
       "zh_CN"
     ]
   },
-  "dependencies": {
-    "@ant-design/icons": "5.6.1",
-    "antd": "5.29.3",
-    "react": "18.3.1",
-    "react-dom": "18.3.1"
-  },
   "devDependencies": {
+    "@ant-design/icons": "5.6.1",
     "@types/node": "^20.19.25",
     "@types/react": "^18.3.27",
     "@types/react-dom": "^18.3.7",
     "@vitejs/plugin-react": "4.7.0",
+    "antd": "5.29.3",
     "electron": "35.7.5",
     "electron-builder": "25.1.8",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
     "typescript": "5.9.3",
     "vite": "5.4.21",
     "vitest": "2.1.9"

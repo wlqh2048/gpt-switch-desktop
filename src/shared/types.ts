@@ -165,6 +165,16 @@ export interface ApplyResult {
   };
 }
 
+export interface ResetResult {
+  success: boolean;
+  message: string;
+  active: ActiveProfileState | null;
+  runtime?: {
+    stop?: RuntimeActionResult;
+    start?: RuntimeActionResult;
+  };
+}
+
 export interface RuntimeActionResult {
   success: boolean;
   message: string;

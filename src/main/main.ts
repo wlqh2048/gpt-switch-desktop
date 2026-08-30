@@ -8,6 +8,7 @@ import {
 } from "./catalog";
 import { resolveCodexDir, resolveStoreDir } from "./codexDir";
 import { ProfileStore } from "./profileStore";
+import { resetCodexConfiguration } from "./resetConfig";
 import { restartChatGPT, startChatGPTRuntime, stopChatGPTRuntime } from "./runtime";
 import { resolveServerBase } from "./serverBase";
 import {
@@ -24,6 +25,12 @@ const appIconPath = path.join(__dirname, "..", "..", "build", "icon.png");
 
 let mainWindow: BrowserWindow | null = null;
 let catalogCache: ProviderCatalog | null = null;
+
+function nativeWindowThemeColors() {
+  return nativeTheme.shouldUseDarkColors
+    ? { backgroundColor: "#000000", symbolColor: "#d1d5db" }
+    : { backgroundColor: "#ffffff", symbolColor: "#64748b" };
+}
 
 function sendSyncProgress(progress: SyncProgress) {
   if (!mainWindow || mainWindow.isDestroyed()) return;
@@ -65,6 +72,9 @@ async function bootstrap() {
 }
 
 function createWindow() {
+  nativeTheme.themeSource = "system";
+  const windowThemeColors = nativeWindowThemeColors();
+
   mainWindow = new BrowserWindow({
     width: 900,
     height: 600,
@@ -82,13 +92,15 @@ function createWindow() {
     titleBarOverlay:
       process.platform === "win32"
         ? {
-            color: "#ffffff",
-            symbolColor: "#64748b",
+            color: windowThemeColors.backgroundColor,
+            symbolColor: windowThemeColors.symbolColor,
             height: 48,
           }
         : false,
     autoHideMenuBar: true,
-    backgroundColor: "#ffffff",
+    backgroundColor: windowThemeColors.backgroundColor,
+    show: false,
+    paintWhenInitiallyHidden: true,
     icon: appIconPath,
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
@@ -96,8 +108,11 @@ function createWindow() {
       nodeIntegration: false,
     },
   });
-  nativeTheme.themeSource = "system";
   mainWindow.setMenuBarVisibility(false);
+  mainWindow.once("ready-to-show", () => {
+    if (!mainWindow || mainWindow.isDestroyed()) return;
+    mainWindow.show();
+  });
 
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
     openExternal(url);
@@ -224,6 +239,27 @@ function registerIpc() {
       }
     },
   );
+  ipcMain.handle("profiles:reset", async () => {
+    try {
+      const { catalog, catalogError } = await getDisplayCatalog();
+      const result = await resetCodexConfiguration({
+        codexDir,
+        store,
+        runtime: {
+          stop: stopChatGPTRuntime,
+          start: startChatGPTRuntime,
+        },
+      });
+      return {
+        ...result,
+        catalogError,
+        profiles: store.listProfiles(catalog),
+        active: store.readActive(),
+      };
+    } catch (error) {
+      return asErrorResult(error);
+    }
+  });
   ipcMain.handle("runtime:restart-chatgpt", () => restartChatGPT());
   ipcMain.handle("runtime:open-external", (_event, url: string) =>
     openExternal(url),

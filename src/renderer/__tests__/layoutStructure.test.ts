@@ -43,12 +43,9 @@ describe("app layout structure", () => {
     expect(appSource).toContain('trackDesktopEvent("确认删除配置"');
     expect(appSource).toContain('trackDesktopEvent("删除配置成功"');
     expect(appSource).toContain('trackDesktopEvent("删除配置失败"');
-    expect(appSource).toContain('trackDesktopEvent("同步消息"');
-    expect(appSource).toContain('trackDesktopEvent("同步消息成功"');
-    expect(appSource).toContain('trackDesktopEvent("同步消息失败"');
-    expect(appSource).toContain('trackDesktopEvent("重启 GPT"');
-    expect(appSource).toContain('trackDesktopEvent("重启 GPT 成功"');
-    expect(appSource).toContain('trackDesktopEvent("重启 GPT 失败"');
+    expect(appSource).toContain('trackDesktopEvent("重置配置"');
+    expect(appSource).toContain('trackDesktopEvent("重置配置成功"');
+    expect(appSource).toContain('trackDesktopEvent("重置配置失败"');
     expect(appSource).toContain('trackDesktopEvent("打开设置"');
     expect(appSource).toContain('trackDesktopEvent("切换深色模式"');
     expect(appSource).toContain('trackDesktopEvent("切换浅色模式"');
@@ -130,6 +127,44 @@ describe("app layout structure", () => {
     expect(mainSource).toContain("icon: appIconPath");
   });
 
+  it("avoids showing a blank startup window before the renderer is ready", () => {
+    const html = fs.readFileSync(path.resolve(__dirname, "../../../index.html"), "utf8");
+    const appSource = fs.readFileSync(path.resolve(__dirname, "../App.tsx"), "utf8");
+    const cssSource = fs.readFileSync(path.resolve(__dirname, "../styles.css"), "utf8");
+    const rendererMainSource = fs.readFileSync(path.resolve(__dirname, "../main.tsx"), "utf8");
+    const mainSource = fs.readFileSync(path.resolve(__dirname, "../../main/main.ts"), "utf8");
+
+    expect(mainSource).toContain("show: false");
+    expect(mainSource).toContain("paintWhenInitiallyHidden: true");
+    expect(mainSource).toContain('mainWindow.once("ready-to-show"');
+    expect(mainSource).toContain("mainWindow.show()");
+    expect(html).toContain('id="boot-screen"');
+    expect(html).toContain('class="boot-screen"');
+    expect(html).toContain('class="boot-icon"');
+    expect(html).toContain('window.matchMedia("(prefers-color-scheme: dark)")');
+    expect(html).toContain("document.documentElement.dataset.theme = theme");
+    expect(html).toContain('html[data-theme="dark"]');
+    expect(html).toContain("@keyframes boot-pulse");
+    expect(rendererMainSource).toContain('document.getElementById("boot-screen")?.remove()');
+    expect(mainSource).toContain("function nativeWindowThemeColors");
+    expect(mainSource).toContain("nativeTheme.shouldUseDarkColors");
+    expect(mainSource).toContain("backgroundColor: windowThemeColors.backgroundColor");
+    expect(appSource).toContain("useLayoutEffect");
+    expect(appSource).toContain("useLayoutEffect(() => {");
+    expect(appSource).toContain("function readInitialThemeMode");
+    expect(appSource).toContain('window.matchMedia?.("(prefers-color-scheme: dark)")');
+    expect(appSource).toContain("function StartupScreen");
+    expect(appSource).toContain("<StartupScreen />");
+    expect(cssBlock(cssSource, "html")).toContain("background: var(--page-bg)");
+    expect(cssBlock(cssSource, "#root")).toContain("background: var(--page-bg)");
+    expect(cssSource).toContain(".startup-screen");
+    expect(cssBlock(cssSource, ".startup-screen")).toContain("position: fixed");
+    expect(cssBlock(cssSource, ".startup-screen")).toContain("inset: 0");
+    expect(cssBlock(cssSource, ".startup-screen")).toContain("min-height: 100vh");
+    expect(cssBlock(cssSource, ".startup-screen")).toContain("z-index: 1");
+    expect(cssSource).toContain("animation: boot-pulse");
+  });
+
   it("centers macOS traffic lights inside the custom titlebar", () => {
     const mainSource = fs.readFileSync(path.resolve(__dirname, "../../main/main.ts"), "utf8");
 
@@ -148,19 +183,51 @@ describe("app layout structure", () => {
     expect(topbarActions).toContain("grid-column: 3");
   });
 
-  it("shows restart beside sync instead of inside settings menu", () => {
+  it("replaces titlebar sync and restart actions with reset confirmation", () => {
     const appSource = fs.readFileSync(path.resolve(__dirname, "../App.tsx"), "utf8");
     const topbar = appSource.match(/<header className="topbar">[\s\S]*?<\/header>/)?.[0] || "";
     const settingsMenu = appSource.match(/const settingsMenu: MenuProps = \{[\s\S]*?\n  \};/)?.[0] || "";
     const cssSource = fs.readFileSync(path.resolve(__dirname, "../styles.css"), "utf8");
-    const restartButton = cssBlock(cssSource, ".restart-button.ant-btn-text");
+    const preloadSource = fs.readFileSync(path.resolve(__dirname, "../../main/preload.ts"), "utf8");
+    const mainSource = fs.readFileSync(path.resolve(__dirname, "../../main/main.ts"), "utf8");
+    const globalTypes = fs.readFileSync(path.resolve(__dirname, "../global.d.ts"), "utf8");
+    const resetButton = cssBlock(cssSource, ".reset-button.ant-btn-text");
 
-    expect(topbar).toContain('className="sync-button"');
-    expect(topbar).toContain('className="restart-button"');
-    expect(topbar).toContain("onClick={restart}");
-    expect(restartButton).toContain("height: 32px");
+    expect(appSource).toContain("ReloadOutlined");
+    expect(appSource).toContain("Tooltip");
+    expect(appSource).toContain("function confirmReset");
+    expect(appSource).toContain('title={t("resetTooltip")}');
+    expect(appSource).toContain('className="reset-button"');
+    expect(appSource).toContain("onClick={confirmReset}");
+    expect(appSource).toContain('title: t("resetTitle")');
+    expect(appSource).toContain('content: t("resetContent")');
+    expect(appSource).toContain('okText: t("resetConfirm")');
+    expect(appSource).toContain("getAiModel(t).profiles.reset()");
+    expect(topbar).not.toContain('className="sync-button"');
+    expect(topbar).not.toContain('className="restart-button"');
+    expect(resetButton).toContain("height: 32px");
     expect(settingsMenu).not.toContain('key: "restart"');
-    expect(settingsMenu).not.toContain("重启 ChatGPT");
+    expect(settingsMenu).not.toContain('key: "sync"');
+    expect(preloadSource).toContain('reset: () => ipcRenderer.invoke("profiles:reset")');
+    expect(mainSource).toContain('ipcMain.handle("profiles:reset"');
+    expect(mainSource).toContain("resetCodexConfiguration");
+    expect(globalTypes).toContain("reset(): Promise");
+  });
+
+  it("shows the config folder action in the profile modal instead of settings", () => {
+    const appSource = fs.readFileSync(path.resolve(__dirname, "../App.tsx"), "utf8");
+    const cssSource = fs.readFileSync(path.resolve(__dirname, "../styles.css"), "utf8");
+    const profileModal = appSource.match(/function ProfileModal[\s\S]*?function AppContent/)?.[0] || "";
+    const settingsMenu = appSource.match(/const settingsMenu: MenuProps = \{[\s\S]*?\n  \};/)?.[0] || "";
+
+    expect(appSource).toContain("FolderOpenOutlined");
+    expect(profileModal).toContain('className="modal-footer-left"');
+    expect(profileModal).toContain('className="open-config-dir-button"');
+    expect(profileModal).toContain("getAiModel(t).runtime.openCodexDir()");
+    expect(profileModal).toContain('trackDesktopEvent("打开配置目录"');
+    expect(settingsMenu).not.toContain('key: "open-dir"');
+    expect(cssSource).toContain(".modal-footer-left");
+    expect(cssBlock(cssSource, ".open-config-dir-button.ant-btn-text")).toContain("height: 32px");
   });
 
   it("adds a persisted Chinese and English language switch in settings", () => {
@@ -266,7 +333,7 @@ describe("app layout structure", () => {
 
   it("shows a toast instead of applying when an official profile is missing its key", () => {
     const appSource = fs.readFileSync(path.resolve(__dirname, "../App.tsx"), "utf8");
-    const applyFunction = appSource.match(/async function apply[\s\S]*?async function syncMessages/)?.[0] || "";
+    const applyFunction = appSource.match(/async function apply[\s\S]*?async function remove/)?.[0] || "";
 
     expect(applyFunction).toContain('message.warning(t("apiKeyMissingToast"), 2)');
     expect(applyFunction).toContain('reason: "missing_api_key"');
@@ -280,7 +347,7 @@ describe("app layout structure", () => {
 
   it("blocks profile apply when an update is required", () => {
     const appSource = fs.readFileSync(path.resolve(__dirname, "../App.tsx"), "utf8");
-    const applyFunction = appSource.match(/async function apply[\s\S]*?async function syncMessages/)?.[0] || "";
+    const applyFunction = appSource.match(/async function apply[\s\S]*?async function remove/)?.[0] || "";
 
     expect(appSource).toContain("applyUpdateBlockForVersions");
     expect(appSource).toContain("showApplyUpdateBlock");

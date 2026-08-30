@@ -51,6 +51,7 @@ html {
   box-sizing: border-box;
   width: 100%;
   height: 100%;
+  background: var(--page-bg);
 }
 
 *,
@@ -90,6 +91,7 @@ textarea {
 #root {
   width: 100%;
   height: 100%;
+  background: var(--page-bg);
 }
 
 .app-shell {
@@ -102,6 +104,50 @@ textarea {
   color: var(--text-main);
   background: var(--page-bg);
   flex-direction: column;
+}
+
+.app-shell.is-starting {
+  display: grid;
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  min-height: 100vh;
+  place-items: center;
+  -webkit-app-region: drag;
+}
+
+.startup-screen {
+  display: grid;
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  min-height: 100vh;
+  z-index: 1;
+  place-content: center;
+  place-items: center;
+  background: var(--page-bg);
+}
+
+.startup-icon {
+  width: 56px;
+  height: 56px;
+  animation: boot-pulse 1200ms ease-in-out infinite;
+  filter: drop-shadow(0 10px 22px rgba(227, 42, 75, 0.18));
+}
+
+@keyframes boot-pulse {
+  0%,
+  100% {
+    opacity: 0.82;
+    transform: scale(0.96);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 .topbar {
@@ -183,6 +229,7 @@ button.update-badge {
 .action-bar,
 .toolbar-tools,
 .modal-footer,
+.modal-footer-left,
 .modal-footer-actions {
   display: flex;
   align-items: center;
@@ -197,8 +244,7 @@ button.update-badge {
   -webkit-app-region: no-drag;
 }
 
-.sync-button.ant-btn-text,
-.restart-button.ant-btn-text {
+.reset-button.ant-btn-text {
   height: 32px;
   padding-inline: 8px;
   color: var(--text-sub);
@@ -206,14 +252,12 @@ button.update-badge {
   font-weight: 600;
 }
 
-.sync-button.ant-btn-text:hover,
-.restart-button.ant-btn-text:hover {
+.reset-button.ant-btn-text:hover {
   color: var(--primary);
   background: color-mix(in srgb, var(--primary) 10%, transparent);
 }
 
-.sync-button .anticon,
-.restart-button .anticon {
+.reset-button .anticon {
   font-size: 14px;
 }
 
@@ -549,8 +593,27 @@ button.update-badge {
   width: 100%;
 }
 
+.modal-footer-left {
+  gap: 8px;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
 .modal-footer-actions {
   gap: 10px;
+}
+
+.open-config-dir-button.ant-btn-text {
+  height: 32px;
+  padding-inline: 0 8px;
+  color: var(--text-sub);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.open-config-dir-button.ant-btn-text:hover {
+  color: var(--primary);
+  background: transparent;
 }
 
 .delete-link {

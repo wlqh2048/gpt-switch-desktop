@@ -42,6 +42,8 @@ Run tests:
 pnpm test
 ```
 
+Installer builds load `.env` and `.env.local`, then write the selected `GPT_SWITCH_SERVER_BASE` into `dist/main/build-config.json` so packaged app launches can reach the configured catalog service without a shell environment.
+
 Build renderer and main-process code:
 
 ```bash

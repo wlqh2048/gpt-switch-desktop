@@ -1,9 +1,9 @@
 import {
   AppstoreOutlined,
-  PoweroffOutlined,
+  FolderOpenOutlined,
   PlusOutlined,
+  ReloadOutlined,
   SettingOutlined,
-  SyncOutlined,
   UnorderedListOutlined,
 } from "@ant-design/icons";
 import {
@@ -18,12 +18,13 @@ import {
   Progress,
   Segmented,
   Select,
+  Tooltip,
   theme as antdTheme,
 } from "antd";
 import type { MenuProps } from "antd";
 import enUS from "antd/locale/en_US";
 import zhCN from "antd/locale/zh_CN";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
   BootstrapState,
   CatalogProvider,
@@ -32,7 +33,6 @@ import {
   DownloadPlatform,
   ProviderCatalog,
   SyncProgress,
-  SyncSummary,
 } from "../shared/types";
 import {
   DEFAULT_LANGUAGE,
@@ -59,7 +59,6 @@ import {
   shellClassNameForUserAgent,
   storeOfficialApiKey,
   syncProgressMessage,
-  syncSuccessMessage,
   updateNoticeForVersions,
 } from "./uiModel";
 
@@ -349,6 +348,9 @@ function createBrowserPreviewApi(t: Translate): AiModelApi {
       apply: async () => {
         throw bridgeUnavailable(t);
       },
+      reset: async () => {
+        throw bridgeUnavailable(t);
+      },
     },
     runtime: {
       restartChatGPT: async () => {
@@ -386,8 +388,19 @@ function getAiModel(t: Translate = createTranslator(DEFAULT_LANGUAGE)) {
   return aiModel || createBrowserPreviewApi(t);
 }
 
-function isThemeMode(value: string | null): value is ThemeMode {
+function isThemeMode(value: string | null | undefined): value is ThemeMode {
   return value === "dark" || value === "light";
+}
+
+function readInitialThemeMode(): ThemeMode {
+  if (typeof window === "undefined") return "light";
+  const documentTheme = document.documentElement.dataset.theme;
+  if (isThemeMode(documentTheme)) return documentTheme;
+  const saved = window.localStorage.getItem("ai-switch-theme");
+  if (isThemeMode(saved)) return saved;
+  return window.matchMedia?.("(prefers-color-scheme: dark)").matches
+    ? "dark"
+    : "light";
 }
 
 function antdTokens(themeMode: ThemeMode) {
@@ -473,20 +486,6 @@ function modalAnalyticsData(state: ProfileModalState): AnalyticsData {
     profile_source: state?.profile?.source || "custom",
     config_mode: state?.profile?.configMode || "chatgpt",
   };
-}
-
-function syncChangedCount(summary?: SyncSummary) {
-  if (!summary || summary.skipped) return 0;
-  return (
-    summary.normalizedRows +
-    summary.dedupedRows +
-    summary.staleRowsRemoved +
-    summary.orphanStateRefsRemoved +
-    summary.rolloutPathsRepaired +
-    summary.rolloutMetaUpdated +
-    (summary.indexChanged ? 1 : 0) +
-    (summary.pinnedChanged ? 1 : 0)
-  );
 }
 
 function ProfileCard({
@@ -636,21 +635,32 @@ function ProfileModal({
       destroyOnHidden
       footer={
         <div className="modal-footer">
-          {isEditingCustom && profile ? (
+          <div className="modal-footer-left">
             <Button
-              className="delete-link"
-              danger
-              type="link"
+              className="open-config-dir-button"
+              icon={<FolderOpenOutlined />}
+              type="text"
               onClick={() => {
-                trackDesktopEvent("删除配置", modalAnalyticsData(state));
-                onDelete(profile);
+                trackDesktopEvent("打开配置目录", modalAnalyticsData(state));
+                getAiModel(t).runtime.openCodexDir();
               }}
             >
-              {t("deleteConfig")}
+              {t("openConfigDir")}
             </Button>
-          ) : (
-            <span />
-          )}
+            {isEditingCustom && profile ? (
+              <Button
+                className="delete-link"
+                danger
+                type="link"
+                onClick={() => {
+                  trackDesktopEvent("删除配置", modalAnalyticsData(state));
+                  onDelete(profile);
+                }}
+              >
+                {t("deleteConfig")}
+              </Button>
+            ) : null}
+          </div>
           <div className="modal-footer-actions">
             <Button
               onClick={() => {
@@ -746,6 +756,14 @@ function ProfileModal({
   );
 }
 
+function StartupScreen() {
+  return (
+    <div className="startup-screen" aria-label="GPT Switch">
+      <img className="startup-icon" src="./favicon.svg" alt="" />
+    </div>
+  );
+}
+
 function AppContent({
   themeMode,
   setThemeMode,
@@ -763,7 +781,7 @@ function AppContent({
   const [modalState, setModalState] = useState<ProfileModalState>(null);
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const [applyingId, setApplyingId] = useState("");
-  const [syncing, setSyncing] = useState(false);
+  const [resetting, setResetting] = useState(false);
   const [syncProgressView, setSyncProgressView] =
     useState<SyncProgressView | null>(null);
   const startupTrackedRef = useRef(false);
@@ -872,6 +890,16 @@ function AppContent({
     return startDesktopHeartbeat(state);
   }, [state?.serverBase, state?.version]);
 
+  const userAgent = currentUserAgent();
+
+  if (!state) {
+    return (
+      <main className={`${shellClassNameForUserAgent(userAgent)} is-starting`}>
+        <StartupScreen />
+      </main>
+    );
+  }
+
   async function apply(
     profile: DisplayProfile,
     successText: string | null = t("configApplied"),
@@ -955,28 +983,6 @@ function AppContent({
     }
   }
 
-  async function syncMessages() {
-    trackDesktopEvent("同步消息");
-    const activeProfile = state?.profiles.find((profile) => profile.isActive);
-    if (!activeProfile) {
-      trackDesktopEvent("同步消息失败", { reason: "no_active_profile" });
-      message.warning(t("applyFirst"), 2);
-      return;
-    }
-    setSyncing(true);
-    const result = await apply(activeProfile, null, false);
-    if (result?.success) {
-      trackDesktopEvent("同步消息成功", {
-        ...profileAnalyticsData(activeProfile),
-        updated_count: syncChangedCount(result.sync),
-      });
-      message.success(syncSuccessMessage(result.sync, language), 2);
-    } else {
-      trackDesktopEvent("同步消息失败", profileAnalyticsData(activeProfile));
-    }
-    setSyncing(false);
-  }
-
   async function remove(profile: DisplayProfile) {
     const analyticsData = profileAnalyticsData(profile);
     try {
@@ -1019,21 +1025,47 @@ function AppContent({
     });
   }
 
-  async function restart() {
-    trackDesktopEvent("重启 GPT");
-    try {
-      const result = await getAiModel(t).runtime.restartChatGPT();
-      if (result.success) {
-        trackDesktopEvent("重启 GPT 成功");
-        message.success(t("restartSuccess"), 2);
-      } else {
-        trackDesktopEvent("重启 GPT 失败");
-        message.error(result.message, 2);
-      }
-    } catch (error) {
-      trackDesktopEvent("重启 GPT 失败");
-      message.error(error instanceof Error ? error.message : t("startupFailed"), 2);
-    }
+  function confirmReset() {
+    trackDesktopEvent("重置配置");
+    modal.confirm({
+      centered: true,
+      title: t("resetTitle"),
+      content: t("resetContent"),
+      okText: t("resetConfirm"),
+      okButtonProps: { danger: true },
+      cancelText: t("cancel"),
+      onOk: async () => {
+        setResetting(true);
+        setSyncProgressView(null);
+        try {
+          const result = await getAiModel(t).profiles.reset();
+          if (!result.success) throw new Error(result.message || t("resetFailed"));
+          if (state) {
+            setState({
+              ...state,
+              profiles: result.profiles
+                ? profilesWithLocalOfficialKeys(result.profiles)
+                : state.profiles.map((profile) => ({
+                    ...profile,
+                    isActive: false,
+                  })),
+              active: null,
+              catalogError: result.catalogError,
+            });
+          } else {
+            await refresh();
+          }
+          showCatalogError(result.catalogError, message);
+          trackDesktopEvent("重置配置成功");
+          message.success(result.message || t("resetSuccess"), 2);
+        } catch (error) {
+          trackDesktopEvent("重置配置失败");
+          message.error(error instanceof Error ? error.message : t("resetFailed"), 2);
+        } finally {
+          setResetting(false);
+        }
+      },
+    });
   }
 
   async function checkForUpdate(from: string) {
@@ -1059,8 +1091,6 @@ function AppContent({
   }
 
   const profiles = state?.profiles || [];
-  const activeProfile = profiles.find((profile) => profile.isActive);
-  const userAgent = currentUserAgent();
   const syncProgress = syncProgressView?.progress || null;
   const progressPercent = syncProgressView?.percent || 0;
   const updateNotice = state
@@ -1087,8 +1117,6 @@ function AppContent({
       { type: "divider" },
       { key: "zh-CN", label: t("languageChinese") },
       { key: "en-US", label: t("languageEnglish") },
-      { type: "divider" },
-      { key: "open-dir", label: t("openConfigDir") },
     ],
     onClick: ({ key }) => {
       if (key === "dark") {
@@ -1115,11 +1143,6 @@ function AppContent({
         void checkForUpdate("settings_version");
         return;
       }
-      if (key === "open-dir") {
-        trackDesktopEvent("打开配置目录");
-        getAiModel(t).runtime.openCodexDir();
-        return;
-      }
     },
   };
 
@@ -1142,24 +1165,18 @@ function AppContent({
           ) : null}
         </div>
         <div className="topbar-actions">
-          <Button
-            className="sync-button"
-            disabled={!activeProfile || Boolean(applyingId)}
-            icon={<SyncOutlined spin={syncing || Boolean(syncProgress)} />}
-            loading={false}
-            type="text"
-            onClick={syncMessages}
-          >
-            {t("syncMessages")}
-          </Button>
-          <Button
-            className="restart-button"
-            icon={<PoweroffOutlined />}
-            type="text"
-            onClick={restart}
-          >
-            {t("restartGpt")}
-          </Button>
+          <Tooltip title={t("resetTooltip")} placement="bottom">
+            <Button
+              className="reset-button"
+              disabled={Boolean(applyingId)}
+              icon={<ReloadOutlined spin={resetting} />}
+              loading={resetting}
+              type="text"
+              onClick={confirmReset}
+            >
+              {t("resetGpt")}
+            </Button>
+          </Tooltip>
           <Dropdown menu={settingsMenu} trigger={["click"]}>
             <Button
               aria-label={t("openSettings")}
@@ -1288,11 +1305,7 @@ function AppContent({
 }
 
 export default function App() {
-  const [themeMode, setThemeMode] = useState<ThemeMode>(() => {
-    if (typeof window === "undefined") return "light";
-    const saved = window.localStorage.getItem("ai-switch-theme");
-    return isThemeMode(saved) ? saved : "light";
-  });
+  const [themeMode, setThemeMode] = useState<ThemeMode>(readInitialThemeMode);
   const [language, setLanguage] = useState<Language>(() => {
     if (typeof window === "undefined") return DEFAULT_LANGUAGE;
     const saved = window.localStorage.getItem(LANGUAGE_STORAGE_KEY);
@@ -1300,7 +1313,7 @@ export default function App() {
   });
   const antdLocale = language === "zh-CN" ? zhCN : enUS;
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     document.documentElement.dataset.theme = themeMode;
     window.localStorage.setItem("ai-switch-theme", themeMode);
   }, [themeMode]);

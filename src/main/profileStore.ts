@@ -381,7 +381,7 @@ export class ProfileStore {
     const filePath = this.customPath(id);
     if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
     if (this.readActive()?.id === id) {
-      writeJsonFile(this.activePath(), { id: "", model: "", appliedAt: this.now().toISOString() });
+      this.clearActiveProfile();
     }
   }
 
@@ -488,5 +488,13 @@ export class ProfileStore {
   readActive(): ActiveProfileState | null {
     const active = readJsonFile<ActiveProfileState>(this.activePath());
     return active?.id ? active : null;
+  }
+
+  clearActiveProfile() {
+    writeJsonFile(this.activePath(), {
+      id: "",
+      model: "",
+      appliedAt: this.now().toISOString(),
+    });
   }
 }

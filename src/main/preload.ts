@@ -16,6 +16,7 @@ contextBridge.exposeInMainWorld("aiModel", {
     update: (id: string, payload: CustomProfileInput) => ipcRenderer.invoke("profiles:update", { id, payload }),
     delete: (id: string) => ipcRenderer.invoke("profiles:delete", { id }),
     apply: (id: string, options?: { apiKey?: string }) => ipcRenderer.invoke("profiles:apply", { id, ...options }),
+    reset: () => ipcRenderer.invoke("profiles:reset"),
   },
   runtime: {
     restartChatGPT: () => ipcRenderer.invoke("runtime:restart-chatgpt"),

@@ -8,3 +8,7 @@ ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
     <App />
   </React.StrictMode>,
 );
+
+requestAnimationFrame(() => {
+  document.getElementById("boot-screen")?.remove();
+});

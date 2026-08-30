@@ -4,6 +4,7 @@ import {
   CustomProfileInput,
   DisplayProfile,
   ProviderCatalog,
+  ResetResult,
   SyncProgress,
 } from "../shared/types";
 
@@ -47,6 +48,7 @@ declare global {
           id: string,
           options?: { apiKey?: string },
         ): Promise<ApplyResult & { profiles?: DisplayProfile[]; catalogError?: string }>;
+        reset(): Promise<ResetResult & { profiles?: DisplayProfile[]; catalogError?: string }>;
       };
       runtime: {
         restartChatGPT(): Promise<{ success: boolean; message: string }>;

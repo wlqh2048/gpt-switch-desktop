@@ -76,6 +76,14 @@ describe("renderer i18n", () => {
     expect(en("alreadyLatest")).toBe("Already up to date");
     expect(zh("apiKeyMissingToast")).toBe("请先填写 API Key 后再应用");
     expect(en("apiKeyMissingToast")).toBe("Add an API key before applying");
+    expect(zh("resetTooltip")).toBe("初始化 ChatGPT 账号配置");
+    expect(en("resetTooltip")).toBe("Initialize ChatGPT account config");
+    expect(zh("resetTitle")).toBe("初始化 ChatGPT 账号配置？");
+    expect(en("resetTitle")).toBe("Initialize ChatGPT account config?");
+    expect(zh("resetContent")).toBe("初始化 ChatGPT 账号配置，可自行登陆官方账号。已保存的配置不会删除。");
+    expect(en("resetContent")).toBe("Initialize the ChatGPT account config so you can sign in with the official account. Saved configs will not be deleted.");
+    expect(zh("resetConfirm")).toBe("确认初始化");
+    expect(en("resetConfirm")).toBe("Initialize");
     expect(zh("syncSuccess", { count: 18 })).toBe("同步成功，更新 18 条配置");
     expect(en("syncSuccess", { count: 18 })).toBe("Sync complete, updated 18 items");
   });

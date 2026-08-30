@@ -20,6 +20,21 @@ describe("resolveServerBase", () => {
     );
   });
 
+  it("uses the packaged build config when runtime env is empty", () => {
+    expect(resolveServerBase("", "https://catalog.example.com/")).toBe(
+      "https://catalog.example.com",
+    );
+  });
+
+  it("prefers runtime env over the packaged build config", () => {
+    expect(
+      resolveServerBase(
+        "https://runtime.example.com/",
+        "https://packaged.example.com/",
+      ),
+    ).toBe("https://runtime.example.com");
+  });
+
   it("uses the single public GPT Switch server env var", () => {
     vi.stubEnv("SERVER_BASE", "https://legacy.example.com");
     vi.stubEnv("GPT_SWITCH_SERVER_BASE", "https://catalog.example.com/");

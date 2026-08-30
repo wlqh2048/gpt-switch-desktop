@@ -1,8 +1,10 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title">
   <title>GPT Switch</title>
-  <rect width="64" height="64" rx="16" fill="#E32A4B"/>
-  <path d="M15 21h9c9 0 10 22 19 22h6" fill="none" stroke="#fff" stroke-width="5.5" stroke-linecap="round"/>
-  <path d="M44 36l7 7-7 7" fill="none" stroke="#fff" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round"/>
-  <path d="M15 43h9c9 0 10-22 19-22h6" fill="none" stroke="#fff" stroke-width="5.5" stroke-linecap="round"/>
-  <path d="M44 14l7 7-7 7" fill="none" stroke="#fff" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <g transform="translate(5.5 5.5) scale(0.828125)">
+    <rect width="64" height="64" rx="16" fill="#E32A4B"/>
+    <path d="M15 21h9c9 0 10 22 19 22h6" fill="none" stroke="#fff" stroke-width="5.5" stroke-linecap="round"/>
+    <path d="M44 36l7 7-7 7" fill="none" stroke="#fff" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M15 43h9c9 0 10-22 19-22h6" fill="none" stroke="#fff" stroke-width="5.5" stroke-linecap="round"/>
+    <path d="M44 14l7 7-7 7" fill="none" stroke="#fff" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
 </svg>
