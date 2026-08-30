@@ -351,15 +351,22 @@ describe("app layout structure", () => {
 
     expect(appSource).toContain("applyUpdateBlockForVersions");
     expect(appSource).toContain("showApplyUpdateBlock");
+    expect(applyFunction).toContain("const cachedUpdateBlock = hasNativeAiModel()");
+    expect(applyFunction).toContain("sourceState.version");
+    expect(applyFunction).toContain("sourceState.serverVersion");
+    expect(applyFunction).toContain("if (cachedUpdateBlock)");
     expect(applyFunction).toContain("latestState = await refresh()");
     expect(applyFunction).toContain("const updateBlock = hasNativeAiModel() && latestState");
     expect(applyFunction).toContain("applyUpdateBlockForVersions(");
     expect(applyFunction).toContain("if (updateBlock)");
     expect(applyFunction).toContain("return null");
-    expect(applyFunction.indexOf("await refresh()")).toBeLessThan(
-      applyFunction.indexOf("applyUpdateBlockForVersions"),
+    expect(applyFunction.indexOf("cachedUpdateBlock")).toBeLessThan(
+      applyFunction.indexOf("setApplyingId(profile.id)"),
     );
-    expect(applyFunction.indexOf("applyUpdateBlockForVersions")).toBeLessThan(
+    expect(applyFunction.indexOf("latestState = await refresh()")).toBeLessThan(
+      applyFunction.lastIndexOf("applyUpdateBlockForVersions"),
+    );
+    expect(applyFunction.lastIndexOf("applyUpdateBlockForVersions")).toBeLessThan(
       applyFunction.indexOf("profiles.apply"),
     );
   });
@@ -404,5 +411,24 @@ describe("app layout structure", () => {
 
     expect(appSource).toContain("nextSyncProgressPercent");
     expect(appSource).not.toContain("processed %");
+  });
+
+  it("shows apply sync progress immediately and keeps the done state visible briefly", () => {
+    const appSource = fs.readFileSync(path.resolve(__dirname, "../App.tsx"), "utf8");
+    const applyFunction = appSource.match(/async function apply[\s\S]*?async function remove/)?.[0] || "";
+    const syncLine = appSource.match(/\{syncProgress[\s\S]*?<section className="config-area">/)?.[0] || "";
+
+    expect(appSource).toContain("initialSyncProgress");
+    expect(appSource).toContain("SYNC_PROGRESS_DONE_HOLD_MS");
+    expect(applyFunction).toContain("showInitialSyncProgress(profile.id)");
+    expect(applyFunction.indexOf("setApplyingId(profile.id)")).toBeLessThan(
+      applyFunction.indexOf("latestState = await refresh()"),
+    );
+    expect(applyFunction.indexOf("showInitialSyncProgress(profile.id)")).toBeLessThan(
+      applyFunction.indexOf("latestState = await refresh()"),
+    );
+    expect(applyFunction).toContain("clearSyncProgressAfterDelay()");
+    expect(applyFunction).not.toContain("setSyncProgressView(null);\n    }");
+    expect(syncLine).not.toContain('syncProgress.phase !== "done"');
   });
 });

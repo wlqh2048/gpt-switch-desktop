@@ -3,6 +3,7 @@ import {
   cardTextForProfile,
   applyUpdateBlockForVersions,
   clientDownloadPlatformForUserAgent,
+  initialSyncProgress,
   nextSyncProgressPercent,
   officialApiKeyStorageKey,
   profilesWithLocalOfficialKeys,
@@ -98,6 +99,19 @@ describe("uiModel", () => {
 
     expect(previous.percent).toBeGreaterThan(nextRun.percent);
     expect(nextRun.runId).toBe("run-2");
+  });
+
+  it("creates an immediate local sync progress entry for apply clicks", () => {
+    const initial = initialSyncProgress("apply-fixture");
+    const next = nextSyncProgressPercent(initial, null);
+
+    expect(initial).toEqual({
+      runId: "apply-fixture",
+      phase: "scan",
+      processed: 0,
+      message: "准备同步消息",
+    });
+    expect(next.percent).toBeGreaterThan(0);
   });
 
   it("keeps official api keys in renderer localStorage helpers", () => {

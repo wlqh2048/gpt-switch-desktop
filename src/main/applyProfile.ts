@@ -4,7 +4,7 @@ import { ApplyResult, CodexConfigFile, ProviderCatalog, RuntimeActionResult, Syn
 import { atomicWriteFile, ensureDir, removeFileIfExists, writeJsonFile } from "./fsUtils";
 import { ProfileStore } from "./profileStore";
 import { renderCodexFiles } from "./renderConfig";
-import { syncThreadVisibility } from "./syncEngine";
+import { runSyncThreadVisibilityInWorker } from "./syncWorkerClient";
 
 function timestampSegment(now: Date) {
   return now.toISOString().replace(/[:.]/g, "-");
@@ -105,7 +105,7 @@ export async function applyProfile({
   if (rendered.authJson) {
     atomicWriteFile(path.join(codexDir, "auth.json"), rendered.authJson);
   }
-  const sync = await syncThreadVisibility({
+  const sync = await runSyncThreadVisibilityInWorker({
     codexDir,
     targetProvider: profile.providerId,
     targetModel: profile.model,

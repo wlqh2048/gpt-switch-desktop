@@ -20,6 +20,7 @@ export interface SyncProgressPercentState {
 }
 
 const OFFICIAL_API_KEY_PREFIX = "ai-switch:official-api-key:";
+export const SYNC_PROGRESS_DONE_HOLD_MS = 700;
 const SYNC_PHASE_RANGES: Record<string, { start: number; end: number }> = {
   scan: { start: 8, end: 42 },
   rollout: { start: 42, end: 82 },
@@ -54,6 +55,15 @@ export function profilesWithLocalOfficialKeys(
     if (profile.source !== "official" || profile.apiKeyState === "saved") return profile;
     return readOfficialApiKey(profile.id, storage) ? { ...profile, apiKeyState: "saved" as const } : profile;
   });
+}
+
+export function initialSyncProgress(runId: string): SyncProgress {
+  return {
+    runId,
+    phase: "scan",
+    processed: 0,
+    message: "准备同步消息",
+  };
 }
 
 export function displayModel(profile: DisplayProfile) {
@@ -210,6 +220,8 @@ export function syncSuccessMessage(summary?: SyncSummary, language: Language = D
 
 export function syncProgressMessage(progress: SyncProgress, language: Language = DEFAULT_LANGUAGE) {
   switch (progress.message) {
+    case "准备同步消息":
+      return translate(language, "syncProgressPreparing");
     case "扫描 ChatGPT 线程数据库":
       return translate(language, "syncProgressScanDb");
     case "同步消息文件元数据":

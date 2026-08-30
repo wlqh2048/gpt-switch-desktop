@@ -53,11 +53,13 @@ import {
   applyUpdateBlockForVersions,
   cardTextForProfile,
   clientDownloadPlatformForUserAgent,
+  initialSyncProgress,
   nextSyncProgressPercent,
   profilesWithLocalOfficialKeys,
   readOfficialApiKey,
   shellClassNameForUserAgent,
   storeOfficialApiKey,
+  SYNC_PROGRESS_DONE_HOLD_MS,
   syncProgressMessage,
   updateNoticeForVersions,
 } from "./uiModel";
@@ -797,6 +799,33 @@ function AppContent({
   const [syncProgressView, setSyncProgressView] =
     useState<SyncProgressView | null>(null);
   const startupTrackedRef = useRef(false);
+  const syncProgressClearTimerRef = useRef<number | null>(null);
+
+  function clearSyncProgressTimer() {
+    if (syncProgressClearTimerRef.current === null) return;
+    window.clearTimeout(syncProgressClearTimerRef.current);
+    syncProgressClearTimerRef.current = null;
+  }
+
+  function hideSyncProgressNow() {
+    clearSyncProgressTimer();
+    setSyncProgressView(null);
+  }
+
+  function showInitialSyncProgress(profileId: string) {
+    clearSyncProgressTimer();
+    const progress = initialSyncProgress(`apply-${profileId}-${Date.now()}`);
+    const next = nextSyncProgressPercent(progress, null);
+    setSyncProgressView({ progress, percent: next.percent });
+  }
+
+  function clearSyncProgressAfterDelay() {
+    clearSyncProgressTimer();
+    syncProgressClearTimerRef.current = window.setTimeout(() => {
+      setSyncProgressView(null);
+      syncProgressClearTimerRef.current = null;
+    }, SYNC_PROGRESS_DONE_HOLD_MS);
+  }
 
   function trackDesktopEvent(
     eventName: string,
@@ -886,6 +915,7 @@ function AppContent({
       })
       .catch((error) => message.error(error.message || t("startupFailed")));
     return aiModel.sync.onProgress((progress) => {
+      clearSyncProgressTimer();
       setSyncProgressView((previous) => {
         const next = nextSyncProgressPercent(
           progress,
@@ -897,6 +927,8 @@ function AppContent({
       });
     });
   }, [message, t]);
+
+  useEffect(() => () => clearSyncProgressTimer(), []);
 
   useEffect(() => {
     if (!state || !hasNativeAiModel()) return;
@@ -932,39 +964,56 @@ function AppContent({
       return null;
     }
 
-    let latestState = state;
-    try {
-      latestState = await refresh();
-    } catch (error) {
-      if (trackApplyResult) {
-        trackDesktopEvent("应用配置失败", {
-          ...analyticsData,
-          reason: "startup_refresh_failed",
-        });
-      }
-      message.error(error instanceof Error ? error.message : t("startupFailed"), 2);
-      return null;
-    }
-    const updateBlock = hasNativeAiModel() && latestState
+    const sourceState = state;
+    if (!sourceState) return null;
+
+    const cachedUpdateBlock = hasNativeAiModel()
       ? applyUpdateBlockForVersions(
-          latestState.version,
-          latestState.serverVersion,
+          sourceState.version,
+          sourceState.serverVersion,
           language,
         )
       : null;
-    if (updateBlock) {
+    if (cachedUpdateBlock) {
       if (trackApplyResult) {
         trackDesktopEvent("应用配置失败", {
           ...analyticsData,
           reason: "update_required",
         });
       }
-      showApplyUpdateBlock(updateBlock, latestState);
+      showApplyUpdateBlock(cachedUpdateBlock, sourceState);
       return null;
     }
+
     setApplyingId(profile.id);
-    setSyncProgressView(null);
+    showInitialSyncProgress(profile.id);
+    let latestState = sourceState;
+    let didApply = false;
+    let failureReason = "";
     try {
+      try {
+        latestState = await refresh();
+      } catch (error) {
+        failureReason = "startup_refresh_failed";
+        throw error;
+      }
+      const updateBlock = hasNativeAiModel() && latestState
+        ? applyUpdateBlockForVersions(
+            latestState.version,
+            latestState.serverVersion,
+            language,
+          )
+        : null;
+      if (updateBlock) {
+        if (trackApplyResult) {
+          trackDesktopEvent("应用配置失败", {
+            ...analyticsData,
+            reason: "update_required",
+          });
+        }
+        showApplyUpdateBlock(updateBlock, latestState);
+        return null;
+      }
       const apiKey = profile.source === "official" ? officialApiKey : undefined;
       const result = await getAiModel(t).profiles.apply(profile.id, { apiKey });
       if (!result.success) throw new Error(result.message || t("applyFailed"));
@@ -983,16 +1032,24 @@ function AppContent({
       if (trackApplyResult) {
         trackDesktopEvent("应用配置成功", analyticsData);
       }
+      didApply = true;
       return result;
     } catch (error) {
       if (trackApplyResult) {
-        trackDesktopEvent("应用配置失败", analyticsData);
+        trackDesktopEvent(
+          "应用配置失败",
+          failureReason ? { ...analyticsData, reason: failureReason } : analyticsData,
+        );
       }
       message.error(error instanceof Error ? error.message : t("applyFailed"), 2);
       return null;
     } finally {
       setApplyingId("");
-      setSyncProgressView(null);
+      if (didApply) {
+        clearSyncProgressAfterDelay();
+      } else {
+        hideSyncProgressNow();
+      }
     }
   }
 
@@ -1051,7 +1108,7 @@ function AppContent({
       cancelText: t("cancel"),
       onOk: async () => {
         setResetting(true);
-        setSyncProgressView(null);
+        hideSyncProgressNow();
         try {
           const result = await getAiModel(t).profiles.reset();
           if (!result.success) throw new Error(result.message || t("resetFailed"));
@@ -1252,7 +1309,7 @@ function AppContent({
         </div>
       </section>
 
-      {syncProgress && syncProgress.phase !== "done" && (
+      {syncProgress && (
         <div className="sync-line">
           <Progress percent={progressPercent} showInfo={false} size="small" />
           <span>{syncProgressMessage(syncProgress, language)}</span>
