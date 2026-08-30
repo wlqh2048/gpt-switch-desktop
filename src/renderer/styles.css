@@ -165,7 +165,12 @@ textarea {
 }
 
 .app-shell.is-windows .topbar {
+  height: 52px;
   padding-right: var(--window-control-space);
+}
+
+.app-shell.is-mac .topbar {
+  height: 48px;
 }
 
 .titlebar-left {

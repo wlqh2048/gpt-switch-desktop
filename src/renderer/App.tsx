@@ -79,6 +79,7 @@ type ProfileFormValues = CustomProfileInput & {
 
 type AiModelApi = Window["aiModel"];
 
+const WINDOW_TITLEBAR_HEIGHT = 52;
 const BROWSER_SERVER_BASE = String(
   import.meta.env.GPT_SWITCH_SERVER_BASE || "",
 )
@@ -90,6 +91,16 @@ let fallbackDesktopDeviceId = "";
 
 function currentUserAgent() {
   return typeof navigator === "undefined" ? "" : navigator.userAgent;
+}
+
+function isWindowsShell(userAgent: string) {
+  return clientDownloadPlatformForUserAgent(userAgent) === "windows";
+}
+
+function titlebarMaskStyle() {
+  return isWindowsShell(currentUserAgent())
+    ? { top: WINDOW_TITLEBAR_HEIGHT }
+    : undefined;
 }
 
 function createAnonymousDeviceId(prefix: string) {
@@ -633,6 +644,7 @@ function ProfileModal({
       centered
       className="profile-modal"
       destroyOnHidden
+      maskStyle={titlebarMaskStyle()}
       footer={
         <div className="modal-footer">
           <div className="modal-footer-left">
@@ -828,6 +840,7 @@ function AppContent({
   ) {
     modal.confirm({
       centered: true,
+      maskStyle: titlebarMaskStyle(),
       title: updateBlock.title,
       content: updateBlock.content,
       okText: updateBlock.okText,
@@ -1012,6 +1025,7 @@ function AppContent({
   function confirmRemove(profile: DisplayProfile) {
     modal.confirm({
       centered: true,
+      maskStyle: titlebarMaskStyle(),
       title: t("deleteTitle"),
       content: t("deleteContent"),
       okText: t("confirmDelete"),
@@ -1029,6 +1043,7 @@ function AppContent({
     trackDesktopEvent("重置配置");
     modal.confirm({
       centered: true,
+      maskStyle: titlebarMaskStyle(),
       title: t("resetTitle"),
       content: t("resetContent"),
       okText: t("resetConfirm"),
