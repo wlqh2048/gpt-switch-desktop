@@ -59,6 +59,7 @@ declare global {
         onProgress(callback: (progress: SyncProgress) => void): () => void;
       };
       window: {
+        setTheme(themeMode: "dark" | "light"): Promise<void>;
         minimize(): Promise<void>;
         close(): Promise<void>;
       };

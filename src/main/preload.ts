@@ -31,6 +31,8 @@ contextBridge.exposeInMainWorld("aiModel", {
     },
   },
   window: {
+    setTheme: (themeMode: "dark" | "light") =>
+      ipcRenderer.invoke("window:set-theme", themeMode),
     minimize: () => ipcRenderer.invoke("window:minimize"),
     close: () => ipcRenderer.invoke("window:close"),
   },

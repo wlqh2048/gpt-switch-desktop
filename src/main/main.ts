@@ -22,14 +22,42 @@ const storeDir = resolveStoreDir(codexDir);
 const serverBase = resolveServerBase();
 const store = new ProfileStore({ storeDir });
 const appIconPath = path.join(__dirname, "..", "..", "build", "icon.png");
+const WINDOW_TITLEBAR_HEIGHT = 52;
 
 let mainWindow: BrowserWindow | null = null;
 let catalogCache: ProviderCatalog | null = null;
 
-function nativeWindowThemeColors() {
-  return nativeTheme.shouldUseDarkColors
+type WindowThemeMode = "dark" | "light";
+
+function isWindowThemeMode(value: unknown): value is WindowThemeMode {
+  return value === "dark" || value === "light";
+}
+
+function nativeWindowThemeColors(themeMode?: WindowThemeMode) {
+  const useDarkColors =
+    themeMode === "dark" || (!themeMode && nativeTheme.shouldUseDarkColors);
+  return useDarkColors
     ? { backgroundColor: "#000000", symbolColor: "#d1d5db" }
     : { backgroundColor: "#ffffff", symbolColor: "#64748b" };
+}
+
+function applyWindowTheme(themeMode: WindowThemeMode) {
+  nativeTheme.themeSource = themeMode;
+  const windowThemeColors = nativeWindowThemeColors(themeMode);
+  if (!mainWindow || mainWindow.isDestroyed()) return;
+  mainWindow.setBackgroundColor(windowThemeColors.backgroundColor);
+  if (process.platform === "win32") {
+    mainWindow.setTitleBarOverlay({
+      color: windowThemeColors.backgroundColor,
+      symbolColor: windowThemeColors.symbolColor,
+      height: WINDOW_TITLEBAR_HEIGHT,
+    });
+  }
+}
+
+function showMainWindow() {
+  if (!mainWindow || mainWindow.isDestroyed() || mainWindow.isVisible()) return;
+  mainWindow.show();
 }
 
 function sendSyncProgress(progress: SyncProgress) {
@@ -72,8 +100,8 @@ async function bootstrap() {
 }
 
 function createWindow() {
-  nativeTheme.themeSource = "system";
-  const windowThemeColors = nativeWindowThemeColors();
+  nativeTheme.themeSource = "dark";
+  const windowThemeColors = nativeWindowThemeColors("dark");
 
   mainWindow = new BrowserWindow({
     width: 900,
@@ -94,7 +122,7 @@ function createWindow() {
         ? {
             color: windowThemeColors.backgroundColor,
             symbolColor: windowThemeColors.symbolColor,
-            height: 48,
+            height: WINDOW_TITLEBAR_HEIGHT,
           }
         : false,
     autoHideMenuBar: true,
@@ -109,10 +137,8 @@ function createWindow() {
     },
   });
   mainWindow.setMenuBarVisibility(false);
-  mainWindow.once("ready-to-show", () => {
-    if (!mainWindow || mainWindow.isDestroyed()) return;
-    mainWindow.show();
-  });
+  mainWindow.webContents.once("did-finish-load", showMainWindow);
+  mainWindow.once("ready-to-show", showMainWindow);
 
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
     openExternal(url);
@@ -265,6 +291,10 @@ function registerIpc() {
     openExternal(url),
   );
   ipcMain.handle("runtime:open-codex-dir", () => shell.openPath(codexDir));
+  ipcMain.handle("window:set-theme", (_event, themeMode: unknown) => {
+    if (!isWindowThemeMode(themeMode)) return;
+    applyWindowTheme(themeMode);
+  });
   ipcMain.handle("window:minimize", () => mainWindow?.minimize());
   ipcMain.handle("window:close", () => mainWindow?.close());
 }

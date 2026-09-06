@@ -115,8 +115,34 @@ describe("app layout structure", () => {
     const mainSource = fs.readFileSync(path.resolve(__dirname, "../../main/main.ts"), "utf8");
 
     expect(mainSource).toMatch(/process\.platform === "win32"[\s\S]*\? "hidden"/);
+    expect(mainSource).toContain("const WINDOW_TITLEBAR_HEIGHT = 52");
     expect(mainSource).toContain("titleBarOverlay");
-    expect(mainSource).toContain('height: 48');
+    expect(mainSource).toContain("height: WINDOW_TITLEBAR_HEIGHT");
+  });
+
+  it("syncs renderer theme changes to the native Windows titlebar overlay", () => {
+    const appSource = fs.readFileSync(path.resolve(__dirname, "../App.tsx"), "utf8");
+    const preloadSource = fs.readFileSync(path.resolve(__dirname, "../../main/preload.ts"), "utf8");
+    const mainSource = fs.readFileSync(path.resolve(__dirname, "../../main/main.ts"), "utf8");
+    const globalTypes = fs.readFileSync(path.resolve(__dirname, "../global.d.ts"), "utf8");
+
+    expect(appSource).toContain("getNativeAiModel()?.window.setTheme(themeMode)");
+    expect(preloadSource).toContain('setTheme: (themeMode: "dark" | "light") =>');
+    expect(preloadSource).toContain('ipcRenderer.invoke("window:set-theme", themeMode)');
+    expect(mainSource).toContain("function applyWindowTheme");
+    expect(mainSource).toContain("mainWindow.setTitleBarOverlay");
+    expect(mainSource).toContain('ipcMain.handle("window:set-theme"');
+    expect(globalTypes).toContain('setTheme(themeMode: "dark" | "light"): Promise<void>');
+  });
+
+  it("starts the Windows titlebar overlay with the dark app shell colors", () => {
+    const mainSource = fs.readFileSync(path.resolve(__dirname, "../../main/main.ts"), "utf8");
+    const createWindowFunction = mainSource.match(/function createWindow\(\) \{[\s\S]*?function openExternal/)?.[0] || "";
+
+    expect(createWindowFunction).toContain('nativeWindowThemeColors("dark")');
+    expect(createWindowFunction).toContain("titleBarOverlay");
+    expect(createWindowFunction).toContain("color: windowThemeColors.backgroundColor");
+    expect(createWindowFunction).toContain("symbolColor: windowThemeColors.symbolColor");
   });
 
   it("uses the shared GPT Switch icon for the Electron window", () => {
@@ -136,8 +162,10 @@ describe("app layout structure", () => {
 
     expect(mainSource).toContain("show: false");
     expect(mainSource).toContain("paintWhenInitiallyHidden: true");
+    expect(mainSource).toContain("function showMainWindow");
     expect(mainSource).toContain('mainWindow.once("ready-to-show"');
-    expect(mainSource).toContain("mainWindow.show()");
+    expect(mainSource).toContain('mainWindow.webContents.once("did-finish-load", showMainWindow)');
+    expect(mainSource).toContain('mainWindow.once("ready-to-show", showMainWindow)');
     expect(html).toContain('id="boot-screen"');
     expect(html).toContain('class="boot-screen"');
     expect(html).toContain('class="boot-icon"');

@@ -380,6 +380,7 @@ function createBrowserPreviewApi(t: Translate): AiModelApi {
       onProgress: () => () => {},
     },
     window: {
+      setTheme: async () => {},
       minimize: async () => {},
       close: async () => {},
     },
@@ -1388,6 +1389,7 @@ export default function App() {
   useLayoutEffect(() => {
     document.documentElement.dataset.theme = themeMode;
     window.localStorage.setItem("ai-switch-theme", themeMode);
+    void getNativeAiModel()?.window.setTheme(themeMode)?.catch(() => {});
   }, [themeMode]);
 
   useEffect(() => {
